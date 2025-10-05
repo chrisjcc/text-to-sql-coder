@@ -23,8 +23,7 @@ sql_grpo_training/
 │   └── training_config.py      # All configuration parameters
 ├── src/
 │   ├── data/
-│   │   ├── dataset_loader.py   # Dataset loading and preprocessing
-│   │   └── data_preprocessor.py
+│   │   └── dataset_loader.py   # Dataset loading and preprocessing
 │   ├── rewards/
 │   │   ├── base_reward.py      # Abstract reward interface
 │   │   ├── sql_executor.py     # Safe SQL execution
