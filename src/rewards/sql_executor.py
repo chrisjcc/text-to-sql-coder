@@ -5,6 +5,8 @@ Provides sandboxed SQL execution with timeout and resource limits.
 import sqlite3
 import time
 import hashlib
+import sys
+import threading
 from typing import List, Tuple, Optional, Any, Dict
 from contextlib import contextmanager
 from dataclasses import dataclass
@@ -119,16 +121,54 @@ class SQLExecutor:
     
     @contextmanager
     def _timeout_context(self):
-        """Context manager for query timeout."""
-        # Set alarm signal
-        signal.signal(signal.SIGALRM, timeout_handler)
-        signal.alarm(int(self.timeout))
-        
-        try:
+        """Context manager for query timeout with cross-platform support."""
+        # Check if SIGALRM is available (Unix-like systems)
+        if hasattr(signal, 'SIGALRM') and sys.platform != 'win32':
+            # Unix: Use signal-based timeout
+            signal.signal(signal.SIGALRM, timeout_handler)
+            signal.alarm(int(self.timeout))
+            try:
+                yield
+            finally:
+                signal.alarm(0)
+        else:
+            # Windows: Use threading-based timeout (less precise but portable)
+            result = {'exception': None}
+            
+            def target():
+                try:
+                    pass  # The actual execution happens in the caller
+                except Exception as e:
+                    result['exception'] = e
+            
+            # Note: For Windows, we'll implement timeout differently in execute()
+            # This context manager becomes a no-op placeholder
             yield
-        finally:
-            # Disable alarm
-            signal.alarm(0)
+    
+    def _execute_with_thread_timeout(self, cursor, query):
+        """Execute query with threading-based timeout (Windows compatible)."""
+        result = {'data': None, 'exception': None}
+        
+        def target():
+            try:
+                cursor.execute(query)
+                result['data'] = cursor.fetchmany(self.max_result_rows)
+            except Exception as e:
+                result['exception'] = e
+        
+        thread = threading.Thread(target=target)
+        thread.daemon = True
+        thread.start()
+        thread.join(timeout=self.timeout)
+        
+        if thread.is_alive():
+            # Timeout occurred - we can't cleanly kill the thread, but we can return timeout error
+            raise TimeoutException("Query execution timed out (Windows)")
+        
+        if result['exception']:
+            raise result['exception']
+        
+        return result['data']
     
     def execute(
         self,
@@ -165,9 +205,14 @@ class SQLExecutor:
             
             # Execute query with optional timeout
             if use_timeout:
-                with self._timeout_context():
-                    cursor.execute(query)
-                    results = cursor.fetchmany(self.max_result_rows)
+                if hasattr(signal, 'SIGALRM') and sys.platform != 'win32':
+                    # Unix: Use signal-based timeout
+                    with self._timeout_context():
+                        cursor.execute(query)
+                        results = cursor.fetchmany(self.max_result_rows)
+                else:
+                    # Windows: Use threading-based timeout
+                    results = self._execute_with_thread_timeout(cursor, query)
             else:
                 cursor.execute(query)
                 results = cursor.fetchmany(self.max_result_rows)

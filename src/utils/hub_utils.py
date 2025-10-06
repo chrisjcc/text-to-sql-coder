@@ -3,7 +3,7 @@ Hugging Face Hub utilities for model upload.
 """
 import logging
 import os
-from huggingface_hub import HfApi, repo_exists, create_repo
+from huggingface_hub import HfApi, create_repo
 from pathlib import Path
 
 
@@ -69,8 +69,8 @@ class HubUploader:
         
         logger.info(f"Uploading model to {repo_id}...")
         
-        # Check if repo exists
-        if not repo_exists(repo_id, token=self.hf_token):
+        # Check if repo exists using HfApi
+        if not self.api.repo_exists(repo_id):
             logger.info(f"Creating repository: {repo_id}")
             create_repo(
                 repo_id=repo_id,
@@ -129,7 +129,7 @@ class HubUploader:
         repo_id = self.get_repo_id()
         
         # Create repo if needed
-        if not repo_exists(repo_id, token=self.hf_token):
+        if not self.api.repo_exists(repo_id):
             create_repo(
                 repo_id=repo_id,
                 token=self.hf_token,

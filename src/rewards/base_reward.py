@@ -81,7 +81,9 @@ class BaseReward(ABC):
             return result.score
         except Exception as e:
             # Log error but don't crash training
-            print(f"Error in reward computation: {e}")
+            import logging
+            logger = logging.getLogger(self.__class__.__name__)
+            logger.error(f"Error in reward computation: {e}", exc_info=True)
             return -1.0  # Maximum penalty for errors
     
     def get_statistics(self) -> Dict[str, float]:
