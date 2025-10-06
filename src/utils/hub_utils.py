@@ -96,7 +96,7 @@ class HubUploader:
             
             logger.info(f"✓ Model uploaded to https://huggingface.co/{repo_id}")
             
-        except Exception as e:
+        except Exception as e:  # pylint: disable=broad-except
             logger.error(f"Failed to upload model: {e}")
             raise
     
@@ -154,7 +154,7 @@ class HubUploader:
                         token=self.hf_token,
                     )
                     logger.info(f"✓ Uploaded {filename}")
-                except Exception as e:
+                except Exception as e:  # pylint: disable=broad-except
                     logger.warning(f"Failed to upload {filename}: {e}")
         
         logger.info(f"✓ Adapter uploaded to https://huggingface.co/{repo_id}")

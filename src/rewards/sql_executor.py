@@ -2,15 +2,17 @@
 Safe SQL execution environment for reward validation.
 Provides sandboxed SQL execution with timeout and resource limits.
 """
-import sqlite3
-import time
 import hashlib
+import signal
+import sqlite3
 import sys
 import threading
-from typing import List, Tuple, Optional, Any, Dict
+import time
 from contextlib import contextmanager
 from dataclasses import dataclass
-import signal
+from typing import List, Tuple, Optional, Any, Dict
+
+import sqlparse
 
 
 class TimeoutException(Exception):
@@ -18,7 +20,7 @@ class TimeoutException(Exception):
     pass
 
 
-def timeout_handler(signum, frame):
+def timeout_handler(signum, frame):  # pylint: disable=unused-argument
     """Signal handler for timeout."""
     raise TimeoutException("SQL execution timed out")
 
@@ -87,9 +89,9 @@ class SQLExecutor:
             cursor.executescript(schema)
             conn.commit()
             return conn
-        except Exception as e:
+        except Exception as e:  # pylint: disable=broad-except
             conn.close()
-            raise ValueError(f"Failed to create schema: {e}")
+            raise ValueError(f"Failed to create schema: {e}") from e
     
     def _normalize_query(self, query: str) -> str:
         """
@@ -102,8 +104,6 @@ class SQLExecutor:
             Normalized query
         """
         # Remove comments, extra whitespace
-        import sqlparse
-        
         # Parse and format
         parsed = sqlparse.parse(query)
         if not parsed:
@@ -138,7 +138,7 @@ class SQLExecutor:
             def target():
                 try:
                     pass  # The actual execution happens in the caller
-                except Exception as e:
+                except Exception as e:  # pylint: disable=broad-except
                     result['exception'] = e
             
             # Note: For Windows, we'll implement timeout differently in execute()
@@ -153,7 +153,7 @@ class SQLExecutor:
             try:
                 cursor.execute(query)
                 result['data'] = cursor.fetchmany(self.max_result_rows)
-            except Exception as e:
+            except Exception as e:  # pylint: disable=broad-except
                 result['exception'] = e
         
         thread = threading.Thread(target=target)
@@ -246,7 +246,7 @@ class SQLExecutor:
                 error=f"SQL error: {str(e)}",
                 execution_time=time.time() - start_time
             )
-        except Exception as e:
+        except Exception as e:  # pylint: disable=broad-except
             return ExecutionResult(
                 success=False,
                 error=f"Unexpected error: {str(e)}",
@@ -331,7 +331,7 @@ class SQLExecutor:
             
             return True, None
             
-        except Exception as e:
+        except Exception as e:  # pylint: disable=broad-except
             return False, str(e)
     
     def clear_cache(self):

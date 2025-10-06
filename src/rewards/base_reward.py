@@ -79,7 +79,7 @@ class BaseReward(ABC):
             self._call_count += 1
             self._total_reward += result.score
             return result.score
-        except Exception as e:
+        except Exception as e:  # pylint: disable=broad-except
             # Log error but don't crash training
             import logging
             logger = logging.getLogger(self.__class__.__name__)
@@ -118,8 +118,8 @@ class CompositeReward(BaseReward):
     
     def __init__(
         self,
-        rewards: list[BaseReward],
-        weights: Optional[list[float]] = None,
+        rewards: List[BaseReward],
+        weights: Optional[List[float]] = None,
         config: Optional[Any] = None
     ):
         """

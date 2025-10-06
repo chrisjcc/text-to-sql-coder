@@ -113,7 +113,7 @@ class SyntaxReward(BaseReward):
             if keyword_count > 0:
                 score += 0.1 * min(keyword_count, 3)
             
-        except Exception:
+        except Exception:  # pylint: disable=broad-except
             score = 0.5
         
         return max(0.0, min(1.0, score))
@@ -306,7 +306,7 @@ class SemanticReward(BaseReward):
             normalized = ' '.join(formatted.split())
             return normalized
             
-        except Exception:
+        except Exception:  # pylint: disable=broad-except
             # Fallback to simple normalization
             return ' '.join(sql.upper().split())
     

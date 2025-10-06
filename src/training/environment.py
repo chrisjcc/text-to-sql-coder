@@ -178,7 +178,7 @@ Output your response in the following format:
                     # This would require vLLM or OpenAI client setup
                     # For now, just test reward function
                     pass
-                except Exception as e:
+                except Exception as e:  # pylint: disable=broad-except
                     logger.error(f"Generation test failed: {e}")
             
             # Test reward function with ground truth
